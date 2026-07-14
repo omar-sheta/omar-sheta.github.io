@@ -1,0 +1,44 @@
+---
+---
+
+@import "minima";
+
+/* TL;DR callout box */
+.tldr {
+  border-left: 4px solid #2a7ae2;
+  background-color: #f6f8fa;
+  padding: 12px 18px;
+  margin: 24px 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.tldr p {
+  margin-bottom: 0;
+}
+
+.tldr-label {
+  display: block;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.8em;
+  color: #2a7ae2;
+  margin-bottom: 6px;
+}
+
+/* Post summary on the home list */
+.post-summary {
+  color: #555;
+  margin-top: 4px;
+}
+
+/* Social links row under the bio */
+.social-links {
+  margin-top: 14px;
+  font-size: 0.95em;
+}
+
+.social-links .sep {
+  color: #bbb;
+  margin: 0 6px;
+}
