@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Refusal and Sycophancy Under LlamaScope: Do they share causal features?"
-date: 2026-07-09
+date: 2026-07-14
 summary: "Refusal and sycophancy localized at different depths. Upon sweeping the model's layers I found that refusal peaks early (layer 11), and sycophancy peaks around (layer 18)."
 ---
 <div class="tldr" markdown="1">

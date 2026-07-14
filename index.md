@@ -4,6 +4,8 @@ layout: home
 
 Omar Sheta here. I am a PhD student at the University of Louisville, and I love research. I work on mechanistic interpretability, studying how large language models represent social context internally and how that shapes behaviors like sycophancy and refusal.
 
+Here I share my experiments, research notes, and pieces of my learning journey as it happens.
+
 <p class="social-links">
   <a href="https://github.com/omar-sheta" target="_blank" rel="me noopener">GitHub</a>
   <span class="sep">&middot;</span>
