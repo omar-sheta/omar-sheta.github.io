@@ -4,3 +4,13 @@ _site/
 .DS_Store
 *.canvas
 assets/images/*_linkedin.png
+
+# private notes (this folder is also the Obsidian vault)
+Daily log.md
+Research_Papers_Notes/
+Supervised Finetuning to add safety.md
+probability & statistics/
+sycophancy and refusal/
+*.base
+# sprint 1 figures: delete the next line when a post uses them
+assets/images/sprint1/
