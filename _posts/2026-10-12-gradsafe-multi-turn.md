@@ -18,6 +18,82 @@ Safety-aligned language models are commonly deployed as multi-turn assistants, a
 
 We extend GradSafe with a Context Window Scanner that applies the detector to fixed-size windows of user turns and uses the maximum window score as the conversation-level score. We evaluate different window sizes, attack families, benign conversation distributions, and target models, on 537 human-authored multi-turn jailbreak (MHJ) conversations and 2,000 WildChat benign conversations sampled to match the MHJ turn-length distribution.
 
+<div class="cws" id="cws">
+<style>
+.cws{border:1px solid #d8d8d8;border-radius:6px;padding:14px 16px 10px;margin:1.2em 0;font-size:0.92em;line-height:1.45}
+.cws-title{font-weight:600;margin:0 0 6px}
+.cws-ctl{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:6px 0 10px}
+.cws-ctl button{font:inherit;padding:3px 10px;border:1px solid #888;background:#fff;border-radius:4px;cursor:pointer}
+.cws-ctl button[aria-pressed=true]{background:#1f5fbf;border-color:#1f5fbf;color:#fff}
+.cws svg{width:100%;height:auto;display:block}
+.cws-read{margin:8px 0 0}
+.cws-note{color:#555;font-size:0.88em;margin:6px 0 0}
+</style>
+<p class="cws-title">How the Context Window Scanner scores a conversation</p>
+<div class="cws-ctl">
+  <span>Window size:</span>
+  <button type="button" data-w="1" aria-pressed="true">W=1</button>
+  <button type="button" data-w="2" aria-pressed="false">W=2</button>
+  <button type="button" data-w="3" aria-pressed="false">W=3</button>
+  <button type="button" data-w="7" aria-pressed="false">Accumulated</button>
+  <button type="button" id="cws-play">Play</button>
+</div>
+<svg id="cws-svg" viewBox="0 0 640 275" role="img" aria-label="Six user turns scored with a sliding window; the conversation score is the maximum window score"></svg>
+<p class="cws-read" id="cws-read"></p>
+<p class="cws-note">The six turns and their scores are illustrative. The ROC-AUC shown for each window size is the paper's measured value on MHJ attacks versus WildChat benign conversations (Table 3).</p>
+</div>
+<script>
+(function(){
+  var root=document.getElementById('cws'); if(!root) return;
+  var svg=document.getElementById('cws-svg'), read=document.getElementById('cws-read');
+  var NS='http://www.w3.org/2000/svg';
+  // illustrative per-turn unsafe cue: only turn 5 carries a strong cue, the rest are benign context
+  var cue=[0.05,0.08,0.06,0.10,0.42,0.07];
+  var labels=['turn 1','turn 2','turn 3','turn 4','turn 5','turn 6'];
+  var auc={1:0.810,2:0.787,3:0.761,7:0.738};          // Table 3 of the paper
+  var W=1, t=0, timer=null;
+  var n=cue.length, x0=24, bw=88, gap=14, top=40, barH=120, base=top+barH;
+  function windowScore(end){ var s=Math.max(0,end-W+1), sum=0; for(var i=s;i<=end;i++) sum+=cue[i]; return sum/(end-s+1); } // mean over the window: benign turns dilute the cue
+  function el(tag,attrs,text){ var e=document.createElementNS(NS,tag); for(var k in attrs) e.setAttribute(k,attrs[k]); if(text!=null) e.textContent=text; return e; }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    var scores=[]; for(var e=0;e<n;e++) scores.push(windowScore(e));
+    var best=0; for(var e=0;e<n;e++) if(scores[e]>scores[best]) best=e;
+    // bars: per-turn cue (gray) and the current window's score (blue) at its end turn
+    for(var i=0;i<n;i++){
+      var x=x0+i*(bw+gap);
+      svg.appendChild(el('rect',{x:x,y:base-cue[i]*barH*2,width:bw,height:cue[i]*barH*2,fill:'#cfd8e3'}));
+      svg.appendChild(el('text',{x:x+bw/2,y:base+18,'text-anchor':'middle','font-size':'14',fill:'#333'},labels[i]));
+    }
+    // the window at step t
+    var s=Math.max(0,t-W+1), wx=x0+s*(bw+gap)-5, ww=(t-s+1)*(bw+gap)-gap+10;
+    svg.appendChild(el('rect',{x:wx,y:top-4,width:ww,height:barH+8,fill:'none',stroke:'#1f5fbf','stroke-width':'2',rx:'4'}));
+    svg.appendChild(el('text',{x:x0,y:base+40,'font-size':'14',fill:'#1f5fbf'},'Blue box: the window ending at '+labels[t]+' ('+(t-s+1)+' turn'+(t-s?'s':'')+'). Blue dots: the score of each window.'));
+    // window scores so far, as blue dots at the end turn of each window
+    for(var e=0;e<=t;e++){
+      var cx=x0+e*(bw+gap)+bw/2, cy=base-scores[e]*barH*2;
+      svg.appendChild(el('circle',{cx:cx,cy:cy,r:5,fill:'#1f5fbf'}));
+      svg.appendChild(el('text',{x:cx,y:cy-9,'text-anchor':'middle','font-size':'13',fill:'#1f5fbf'},scores[e].toFixed(2)));
+    }
+    // max-pooled conversation score
+    var mx=0; for(var e=0;e<=t;e++) if(scores[e]>mx) mx=scores[e];
+    var my=base-mx*barH*2;
+    svg.appendChild(el('line',{x1:x0-8,y1:my,x2:x0+n*(bw+gap)-gap+8,y2:my,stroke:'#c0392b','stroke-width':'1.5','stroke-dasharray':'5 4'}));
+    svg.appendChild(el('text',{x:x0,y:top-18,'font-size':'14',fill:'#c0392b'},'Red line: conversation score = max over windows = '+mx.toFixed(2)));
+    svg.appendChild(el('text',{x:x0,y:base+60,'font-size':'14',fill:'#555'},'Gray bars: unsafe cue carried by each user turn (illustrative; only turn 5 carries one).'));
+    read.textContent='With W='+(W===7?'all turns (accumulated)':W)+', the window that contains turn 5 scores '+scores[4].toFixed(2)+(W>1?' because the benign turns around it dilute the cue':' because the turn is scored on its own')+'. On the real benchmark this setting reaches ROC-AUC '+auc[W].toFixed(3)+'.';
+  }
+  function setW(w){ W=w; t=0; var bs=root.querySelectorAll('button[data-w]'); for(var i=0;i<bs.length;i++) bs[i].setAttribute('aria-pressed', String(+bs[i].getAttribute('data-w')===w)); draw(); }
+  function step(){ t=(t+1)%n; draw(); if(t===n-1){ clearInterval(timer); timer=null; document.getElementById('cws-play').textContent='Play'; } }
+  root.addEventListener('click',function(ev){
+    var b=ev.target.closest('button'); if(!b) return;
+    if(b.id==='cws-play'){ if(timer){ clearInterval(timer); timer=null; b.textContent='Play'; } else { t=-1; step(); timer=setInterval(step,700); b.textContent='Pause'; } return; }
+    if(b.hasAttribute('data-w')){ if(timer){ clearInterval(timer); timer=null; document.getElementById('cws-play').textContent='Play'; } setW(+b.getAttribute('data-w')); }
+  });
+  t=n-1; draw();
+})();
+</script>
+
 ## What we found
 
 ![ROC curves for key methods on the real WildChat benchmark](/assets/images/gradsafe_roc.png)
