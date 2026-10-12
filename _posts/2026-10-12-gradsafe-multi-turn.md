@@ -14,6 +14,116 @@ Our paper on gradient-based jailbreak detection in multi-turn dialogue was accep
 
 Safety-aligned language models are commonly deployed as multi-turn assistants, allowing adversaries to distribute unsafe intent across several user turns rather than expressing it in a single prompt. Existing gradient-based jailbreak detectors, such as GradSafe, were developed for single-prompt inputs. They detect unsafe prompts by measuring the alignment between an input-induced gradient and a fixed unsafe reference direction; however, their effectiveness in multi-turn dialogue remains unclear. This gap motivates a central question: when malicious intent is distributed across a dialogue, does the internal unsafe gradient signature remain detectable, weaken, or disappear?
 
+<div class="gsw" id="gsw">
+<style>
+.gsw{border:1px solid #d8d8d8;border-radius:6px;padding:14px 16px 10px;margin:1.2em 0;font-size:0.92em;line-height:1.45}
+.gsw-title{font-weight:600;margin:0 0 6px}
+.gsw-ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:6px 0 10px}
+.gsw-ctl button{font:inherit;padding:3px 10px;border:1px solid #888;background:#fff;border-radius:4px;cursor:pointer}
+.gsw-ctl button[aria-pressed=true]{background:#1f5fbf;border-color:#1f5fbf;color:#fff}
+.gsw-ctl .gsw-sep{color:#999}
+.gsw svg{width:100%;height:auto;display:block}
+.gsw-cap{margin:8px 0 0;min-height:3.2em}
+.gsw-note{color:#555;font-size:0.88em;margin:6px 0 0}
+</style>
+<p class="gsw-title">What a gradient-based detector reads: the model's surprise at saying "Sure"</p>
+<div class="gsw-ctl">
+  <button type="button" id="gsw-prev">Back</button>
+  <button type="button" id="gsw-next">Next</button>
+  <button type="button" id="gsw-play">Play</button>
+  <span class="gsw-sep">|</span>
+  <span>Input:</span>
+  <button type="button" data-kind="unsafe" aria-pressed="true">harmful request</button>
+  <button type="button" data-kind="benign" aria-pressed="false">benign request</button>
+</div>
+<svg id="gsw-svg" viewBox="0 0 640 300" role="img" aria-label="Five-step sketch of GradSafe scoring: input plus Sure, loss, gradient arrow, reference arrow, cosine score"></svg>
+<p class="gsw-cap" id="gsw-cap"></p>
+<p class="gsw-note">A sketch. The gradient lives in the space of the model's safety-critical parameters, drawn here as a plane; the arrows, angles and scores are illustrative. The scoring rule is the paper's Eq. 1: the cosine between the input's gradient and a fixed unsafe reference direction.</p>
+</div>
+<script>
+(function(){
+  var root=document.getElementById('gsw'); if(!root) return;
+  var svg=document.getElementById('gsw-svg'), cap=document.getElementById('gsw-cap');
+  var NS='http://www.w3.org/2000/svg';
+  var kind='unsafe', step=0, timer=null, N=6;
+  var K={unsafe:{label:'harmful request (not shown)',loss:0.85,ang:58,cos:'0.83',diluted:95,dcos:'0.32'},
+         benign:{label:'benign request',loss:0.15,ang:112,cos:'0.14',diluted:118,dcos:'0.09'}};
+  var REF=28;                                                  // angle of the unsafe reference direction
+  var caps=[
+    'Step 1. GradSafe takes the user text and appends the compliance token "Sure,". It never generates an answer; it asks a different question: how far is this model from agreeing?',
+    'Step 2. The loss measures the model\'s surprise at "Sure,". A safety-trained model is not surprised to agree to a benign request, and very surprised to agree to a harmful one.',
+    'Step 3. One backward pass turns that surprise into a gradient: the direction the safety-critical parameters would have to move to make "Sure," likely. This arrow is what the detector reads.',
+    'Step 4. Harmful requests push the same parameters the same way, so their arrows line up. Their average over a few known-unsafe prompts is stored once as the unsafe reference direction.',
+    'Step 5. The score is the cosine of the angle between the input\'s arrow and the reference. Close to the reference means unsafe; far from it means benign. Switch the input above to compare.',
+    'Step 6. In a conversation, the window text is what gets paired with "Sure,". Benign turns inside the window add their own pull, so the arrow of a window that contains a harmful turn drifts away from the reference and the score drops. That is the dilution the paper measures.'
+  ];
+  function el(tag,attrs,text){ var e=document.createElementNS(NS,tag); for(var k in attrs) e.setAttribute(k,attrs[k]); if(text!=null) e.textContent=text; return e; }
+  function arrow(x0,y0,ang,len,color,width,label,dash){
+    var r=ang*Math.PI/180, x1=x0+len*Math.cos(r), y1=y0-len*Math.sin(r);
+    var a={x1:x0,y1:y0,x2:x1,y2:y1,stroke:color,'stroke-width':width}; if(dash) a['stroke-dasharray']=dash;
+    svg.appendChild(el('line',a));
+    var h=9, r2=r+Math.PI;
+    svg.appendChild(el('polygon',{points:[x1,y1, x1+h*Math.cos(r2-0.45),y1-h*Math.sin(r2-0.45), x1+h*Math.cos(r2+0.45),y1-h*Math.sin(r2+0.45)].join(' '),fill:color}));
+    if(label) svg.appendChild(el('text',{x:x1+10*Math.cos(r),y:y1-10*Math.sin(r)+4,'font-size':'13',fill:color},label));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    var k=K[kind];
+    // left panel: the input card
+    svg.appendChild(el('rect',{x:20,y:30,width:250,height:110,rx:8,fill:'#f4f6fa',stroke:'#c9d0dc'}));
+    svg.appendChild(el('text',{x:34,y:56,'font-size':'13',fill:'#333'},'user text: '+k.label));
+    if(step>=0){
+      svg.appendChild(el('rect',{x:34,y:72,width:70,height:26,rx:5,fill:step===0?'#1f5fbf':'#dfe7f5'}));
+      svg.appendChild(el('text',{x:69,y:90,'text-anchor':'middle','font-size':'14',fill:step===0?'#fff':'#1f5fbf'},'Sure,'));
+      svg.appendChild(el('text',{x:112,y:90,'font-size':'12',fill:'#555'},'appended compliance token'));
+    }
+    if(step>=1){
+      svg.appendChild(el('text',{x:34,y:124,'font-size':'13',fill:'#333'},'surprise at "Sure," (loss)'));
+      svg.appendChild(el('rect',{x:195,y:112,width:60,height:14,fill:'#e6e6e6'}));
+      svg.appendChild(el('rect',{x:195,y:112,width:60*k.loss,height:14,fill:step===1?'#c0392b':'#e59a94'}));
+    }
+    // right panel: the parameter plane
+    var ox=430, oy=215;
+    svg.appendChild(el('text',{x:300,y:52,'font-size':'13',fill:'#555'},'safety-critical parameters (sketch)'));
+    svg.appendChild(el('line',{x1:300,y1:oy,x2:620,y2:oy,stroke:'#ccc'})); svg.appendChild(el('line',{x1:ox,y1:60,x2:ox,y2:260,stroke:'#ccc'}));
+    if(step>=3){
+      arrow(ox,oy,REF,150,'#c0392b',2.5,'unsafe reference',null);
+      if(step===3){ arrow(ox,oy,REF+9,120,'#e59a94',1.5,null,'4 3'); arrow(ox,oy,REF-8,130,'#e59a94',1.5,null,'4 3'); arrow(ox,oy,REF+3,110,'#e59a94',1.5,null,'4 3');
+        svg.appendChild(el('text',{x:ox+8,y:oy+22,'font-size':'12',fill:'#c0392b'},'dashed: gradients of known-unsafe prompts')); }
+    }
+    if(step>=2){
+      var ang=step===5?k.diluted:k.ang;
+      arrow(ox,oy,ang,150,'#1f5fbf',2.5,step===5?'this window':'this input',null);
+      if(step===5) arrow(ox,oy,k.ang,150,'#9fb8e0',1.5,null,'4 3');
+    }
+    if(step>=4){
+      var a0=Math.min(REF, step===5?k.diluted:k.ang), a1=Math.max(REF, step===5?k.diluted:k.ang), r0=a0*Math.PI/180, r1=a1*Math.PI/180, R=48;
+      svg.appendChild(el('path',{d:'M'+(ox+R*Math.cos(r0))+','+(oy-R*Math.sin(r0))+' A'+R+','+R+' 0 0,0 '+(ox+R*Math.cos(r1))+','+(oy-R*Math.sin(r1)),fill:'none',stroke:'#333','stroke-width':'1.5'}));
+      var mid=(a0+a1)/2*Math.PI/180;
+      svg.appendChild(el('text',{x:ox+64*Math.cos(mid),y:oy-64*Math.sin(mid)+5,'font-size':'15','font-weight':'600',fill:'#333'},'score = cos = '+(step===5?k.dcos:k.cos)));
+    }
+    if(step===5){
+      svg.appendChild(el('rect',{x:20,y:160,width:250,height:100,rx:8,fill:'#f4f6fa',stroke:'#c9d0dc'}));
+      svg.appendChild(el('text',{x:34,y:184,'font-size':'13',fill:'#333'},'window = benign turn + benign turn'));
+      svg.appendChild(el('text',{x:34,y:204,'font-size':'13',fill:'#333'},'         + '+(kind==='unsafe'?'harmful turn':'benign turn')+' + "Sure,"'));
+      svg.appendChild(el('text',{x:34,y:236,'font-size':'12',fill:'#555'},'light arrow: the turn alone. dark: the whole window.'));
+    }
+    svg.appendChild(el('text',{x:20,y:288,'font-size':'12',fill:'#777'},'step '+(step+1)+' of '+N));
+    cap.textContent=caps[step];
+  }
+  function go(s){ step=(s+N)%N; draw(); }
+  function stopPlay(){ if(timer){ clearInterval(timer); timer=null; document.getElementById('gsw-play').textContent='Play'; } }
+  root.addEventListener('click',function(ev){
+    var b=ev.target.closest('button'); if(!b) return;
+    if(b.id==='gsw-prev'){ stopPlay(); go(step-1); }
+    else if(b.id==='gsw-next'){ stopPlay(); go(step+1); }
+    else if(b.id==='gsw-play'){ if(timer){ stopPlay(); } else { go(0); timer=setInterval(function(){ if(step===N-1){ stopPlay(); } else go(step+1); },2600); b.textContent='Pause'; } }
+    else if(b.hasAttribute('data-kind')){ kind=b.getAttribute('data-kind'); var bs=root.querySelectorAll('button[data-kind]'); for(var i=0;i<bs.length;i++) bs[i].setAttribute('aria-pressed',String(bs[i]===b)); draw(); }
+  });
+  go(4);
+})();
+</script>
+
 ## What we did
 
 We extend GradSafe with a Context Window Scanner that applies the detector to fixed-size windows of user turns and uses the maximum window score as the conversation-level score. We evaluate different window sizes, attack families, benign conversation distributions, and target models, on 537 human-authored multi-turn jailbreak (MHJ) conversations and 2,000 WildChat benign conversations sampled to match the MHJ turn-length distribution.
