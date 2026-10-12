@@ -38,9 +38,20 @@
   function makePlayer(pre, figSel, scenes, render, staticIdx) {
     var fig = $(figSel); if (!fig) return null;
     var P = { i: 0, t: 1, playing: false, raf: null, timer: null };
-    var dots = $("#" + pre + "Dots"), play = $("#" + pre + "Play"), prev = $("#" + pre + "Prev"), next = $("#" + pre + "Next"), cap = $("#" + pre + "Cap");
+    var dots = $("#" + pre + "Dots"), play = $("#" + pre + "Play"), prev = $("#" + pre + "Prev"), next = $("#" + pre + "Next"), steps = $("#" + pre + "Steps");
     dots.innerHTML = scenes.map(function (sc, j) { return "<button type='button' role='tab' aria-label='Step " + (j + 1) + ": " + esc(sc.t) + "'>" + (j + 1) + "</button>"; }).join("");
     var btns = $$("button", dots);
+    /* the narration: every step's text sits beside the animation; the current one is highlighted and revealed sentence by sentence */
+    var sentences = scenes.map(function (sc) { return sc.h.match(/[^.!?]+[.!?]+["\u201D]?\s*|[^.!?]+$/g) || [sc.h]; });
+    steps.innerHTML = scenes.map(function (sc, j) {
+      return "<div class='g-step' data-i='" + j + "'><span class='stepno'>Step " + (j + 1) + " of " + scenes.length + "</span><h4>" + esc(sc.t) + "</h4><p>" +
+        sentences[j].map(function (x) { return "<span class='sent on'>" + esc(x) + "</span>"; }).join("") + "</p></div>";
+    }).join("");
+    var stepEls = $$(".g-step", steps);
+    function reveal(i, t) {
+      var sp = $$(".sent", stepEls[i]), n = sp.length;
+      sp.forEach(function (x, k) { x.classList.toggle("on", k === 0 || t >= (k / n) * 0.85); });
+    }
     function setPlaying(on) {
       if (on) players.forEach(function (o) { if (o !== api) o.pause(); });
       P.playing = on;
@@ -52,14 +63,15 @@
       if (P.raf) { cancelAnimationFrame(P.raf); P.raf = null; }
       P.i = i;
       btns.forEach(function (b, j) { b.setAttribute("aria-selected", j === i ? "true" : "false"); b.classList.toggle("done", j < i); });
-      cap.innerHTML = "<span class='stepno'>Step " + (i + 1) + " of " + scenes.length + "</span><h4>" + esc(scenes[i].t) + "</h4><p>" + esc(scenes[i].h) + "</p>";
+      stepEls.forEach(function (el, j) { if (j === i) el.setAttribute("aria-current", "step"); else el.removeAttribute("aria-current"); if (j !== i) $$(".sent", el).forEach(function (x) { x.classList.add("on"); }); });
+      if (steps.scrollHeight > steps.clientHeight) { var el = stepEls[i]; steps.scrollTo({ top: Math.max(0, el.offsetTop - steps.offsetTop - 8), behavior: animate && !reduce ? "smooth" : "auto" }); }
       prev.disabled = i === 0; next.disabled = i === scenes.length - 1;
       if (!P.playing) play.textContent = i === scenes.length - 1 ? "Replay" : "Play";
-      if (!animate || reduce) { P.t = 1; render(i, 1); if (P.playing) setPlaying(false); return; }
+      if (!animate || reduce) { P.t = 1; render(i, 1); reveal(i, 1); if (P.playing) setPlaying(false); return; }
       var t0 = performance.now(), ms = scenes[i].ms;
       (function frame(now) {
         var t = clamp((now - t0) / ms, 0, 1);
-        P.t = t; render(i, t);
+        P.t = t; render(i, t); reveal(i, t);
         if (t < 1) { P.raf = requestAnimationFrame(frame); return; }
         P.raf = null;
         if (!P.playing) return;
@@ -75,10 +87,11 @@
     prev.addEventListener("click", function () { setPlaying(false); show(Math.max(0, P.i - 1), true); });
     next.addEventListener("click", function () { setPlaying(false); show(Math.min(scenes.length - 1, P.i + 1), true); });
     btns.forEach(function (b, j) { b.addEventListener("click", function () { setPlaying(false); show(j, true); }); });
+    stepEls.forEach(function (el, j) { el.addEventListener("click", function () { if (j !== P.i) { setPlaying(false); show(j, true); } }); });
     var api = {
       pause: function () { if (P.playing) setPlaying(false); },
       redraw: function () { render(P.i, P.t); },
-      frame: function (i, t) { setPlaying(false); show(i, false); P.t = t; render(i, t); }
+      frame: function (i, t) { setPlaying(false); show(i, false); P.t = t; render(i, t); reveal(i, t); }
     };
     players.push(api);
     show(STATIC ? staticIdx : 0, false);

@@ -26,8 +26,10 @@ Safety-aligned language models are commonly deployed as multi-turn assistants, a
       <button type="button" class="btn" id="g1Next">Next</button>
     </div>
   </div>
-  <div class="g-chart" id="g1Chart"></div>
-  <div class="g-cap" id="g1Cap" aria-live="polite"></div>
+  <div class="g-body">
+    <div class="g-chart" id="g1Chart"></div>
+    <div class="g-steps" id="g1Steps" aria-live="polite"></div>
+  </div>
   <div class="g-legend"><span><i class="k-acc"></i>Gradient of this input</span><span><i class="k-crit"></i>Unsafe reference direction</span></div>
   <figcaption>A sketch. The gradient lives in the space of the model's safety-critical parameters; the plane, the arrows, the angles and the scores are illustrative. The scoring rule is Eq. 1 of the paper: the cosine between the input's gradient and a fixed unsafe reference direction.</figcaption>
 </figure>
@@ -47,8 +49,10 @@ We extend GradSafe with a Context Window Scanner that applies the detector to fi
       <button type="button" class="btn" id="g2Next">Next</button>
     </div>
   </div>
-  <div class="g-chart" id="g2Chart"></div>
-  <div class="g-cap" id="g2Cap" aria-live="polite"></div>
+  <div class="g-body">
+    <div class="g-chart" id="g2Chart"></div>
+    <div class="g-steps" id="g2Steps" aria-live="polite"></div>
+  </div>
   <div class="g-legend"><span><i class="k-acc"></i>Score of one window</span><span><i class="k-crit"></i>Unsafe cue in a turn, and the conversation score</span></div>
   <figcaption>The six turns and their scores are illustrative. The ROC-AUC values in the last step are the paper's measured numbers (Table 3).</figcaption>
 </figure>

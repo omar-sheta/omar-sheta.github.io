@@ -21,11 +21,19 @@
 .gfig .g-seg button[aria-pressed="true"] { background: var(--fsurf2); color: var(--ftext); font-weight: 600; }
 .gfig .g-chart { width: 100%; background: var(--fbg); border: 1px solid var(--fline); border-radius: 10px; overflow: hidden; }
 .gfig .g-chart svg { display: block; width: 100%; height: auto; }
-.gfig .g-cap { min-height: 7.4em; margin: 10px 2px 6px; }
-.gfig .g-cap .stepno { display: inline-block; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; color: var(--facc-ink); margin-bottom: 2px; }
-.gfig .g-cap h4 { margin: 0 0 4px; font-size: 1.02rem; line-height: 1.3; }
-.gfig .g-cap p { margin: 0; color: var(--ftext2); }
-@media (max-width: 600px) { .gfig .g-cap { min-height: 11em; } }
+.gfig .g-body { display: flex; gap: 14px; align-items: flex-start; }
+.gfig .g-chart { flex: 1 1 58%; min-width: 0; }
+.gfig .g-steps { flex: 0 0 38%; min-width: 0; display: flex; flex-direction: column; gap: 4px; max-height: 480px; overflow-y: auto; padding-right: 2px; }
+.gfig .g-step { padding: 8px 10px; border-radius: 10px; border: 1px solid transparent; color: var(--fmuted); cursor: pointer; }
+.gfig .g-step:hover { border-color: var(--fline); }
+.gfig .g-step[aria-current="step"] { background: var(--fsurf2); border-color: var(--fline); color: var(--ftext); cursor: default; }
+.gfig .g-step .stepno { display: block; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; color: var(--facc-ink); margin-bottom: 1px; }
+.gfig .g-step h4 { margin: 0 0 3px; font-size: .95rem; line-height: 1.3; font-weight: 650; }
+.gfig .g-step p { margin: 0; font-size: .88rem; line-height: 1.45; }
+.gfig .g-step .sent { transition: opacity .35s ease; }
+.gfig .g-step[aria-current="step"] .sent { opacity: .2; }
+.gfig .g-step[aria-current="step"] .sent.on { opacity: 1; }
+@media (max-width: 680px) { .gfig .g-body { flex-direction: column; } .gfig .g-steps { flex: none; max-height: none; width: 100%; } .gfig .g-step { color: var(--ftext2); } }
 .gfig .g-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .84rem; color: var(--ftext2); margin: 4px 2px 0; }
 .gfig .g-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
 .gfig .g-legend i.k-acc { background: var(--facc); } .gfig .g-legend i.k-crit { background: var(--fcrit); } .gfig .g-legend i.k-rand { background: var(--frand); }
