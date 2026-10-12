@@ -1,0 +1,59 @@
+/* Animated figures for the GradSafe post. Same design as the sprint explainer: tokens, step dots, player. */
+.gfig { --fbg: #fcfcfb; --fsurf: #ffffff; --fsurf2: #f4f3f0; --fline: #e3e2dc; --ftext: #0b0b0b; --ftext2: #52514e; --fmuted: #77756f;
+  --facc: #2a78d6; --facc-ink: #184f95; --fs1: #2a78d6; --fs2: #eb6834; --frand: #898781; --fgrid: #e8e7e2; --faxis: #c3c2b7; --fcrit: #d03b3b;
+  --fshadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.05); }
+@media (prefers-color-scheme: dark) { .gfig:not([data-theme="light"]) { --fbg: #131312; --fsurf: #1a1a19; --fsurf2: #232321; --fline: #34332f; --ftext: #f4f3ee; --ftext2: #c3c2b7; --fmuted: #a09f95;
+  --facc: #3987e5; --facc-ink: #86b6ef; --fs1: #3987e5; --fs2: #d95926; --fgrid: #2a2a27; --faxis: #44433e; --fcrit: #e66767; --fshadow: none; } }
+.gfig { margin: 1.6em 0; padding: 14px 16px 12px; border: 1px solid var(--fline); border-radius: 14px; background: var(--fsurf); color: var(--ftext); box-shadow: var(--fshadow); font-size: .95rem; line-height: 1.45; }
+.gfig * { box-sizing: border-box; }
+.gfig .g-title { font-weight: 650; margin: 0 0 8px; }
+.gfig .g-top { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.gfig .g-dots { display: flex; gap: 6px; flex-wrap: wrap; }
+.gfig .g-dots button { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--fline); background: var(--fsurf2); color: var(--ftext2); font: inherit; font-size: .8rem; cursor: pointer; padding: 0; }
+.gfig .g-dots button.done { border-color: var(--facc); color: var(--facc-ink); }
+.gfig .g-dots button[aria-selected="true"] { background: var(--facc); border-color: var(--facc); color: #fff; font-weight: 600; }
+.gfig .g-ctl { display: flex; gap: 6px; flex-wrap: wrap; }
+.gfig .btn { border: 1px solid var(--fline); background: var(--fsurf); color: var(--ftext); border-radius: 8px; padding: 6px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
+.gfig .btn:disabled { opacity: .45; cursor: default; }
+.gfig .g-play { min-width: 74px; background: var(--facc); border-color: var(--facc); color: #fff; font-weight: 600; }
+.gfig .g-seg { display: inline-flex; border: 1px solid var(--fline); border-radius: 8px; overflow: hidden; }
+.gfig .g-seg button { border: 0; background: var(--fsurf); color: var(--ftext2); font: inherit; font-size: .85rem; padding: 5px 10px; cursor: pointer; }
+.gfig .g-seg button[aria-pressed="true"] { background: var(--fsurf2); color: var(--ftext); font-weight: 600; }
+.gfig .g-chart { width: 100%; background: var(--fbg); border: 1px solid var(--fline); border-radius: 10px; overflow: hidden; }
+.gfig .g-chart svg { display: block; width: 100%; height: auto; }
+.gfig .g-cap { min-height: 7.4em; margin: 10px 2px 6px; }
+.gfig .g-cap .stepno { display: inline-block; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; color: var(--facc-ink); margin-bottom: 2px; }
+.gfig .g-cap h4 { margin: 0 0 4px; font-size: 1.02rem; line-height: 1.3; }
+.gfig .g-cap p { margin: 0; color: var(--ftext2); }
+@media (max-width: 600px) { .gfig .g-cap { min-height: 11em; } }
+.gfig .g-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .84rem; color: var(--ftext2); margin: 4px 2px 0; }
+.gfig .g-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.gfig .g-legend i.k-acc { background: var(--facc); } .gfig .g-legend i.k-crit { background: var(--fcrit); } .gfig .g-legend i.k-rand { background: var(--frand); }
+.gfig .g-legend i.k-line { width: 18px; height: 3px; border-radius: 2px; background: var(--ftext); vertical-align: 3px; }
+.gfig figcaption { font-size: .82rem; color: var(--fmuted); margin: 8px 2px 0; }
+/* svg classes */
+.gfig .tx { fill: var(--ftext); font-size: 13px; } .gfig .tx-b { fill: var(--ftext); font-size: 13px; font-weight: 600; }
+.gfig .tx-m { fill: var(--fmuted); font-size: 12px; } .gfig .tx-2 { fill: var(--ftext2); font-size: 12.5px; }
+.gfig .tx-acc { fill: var(--facc-ink); font-size: 13px; font-weight: 600; } .gfig .tx-crit { fill: var(--fcrit); font-size: 13px; font-weight: 600; }
+.gfig .halo { paint-order: stroke; stroke: var(--fbg); stroke-width: 4px; stroke-linejoin: round; }
+.gfig .axisline { stroke: var(--faxis); stroke-width: 1.2; } .gfig .gridline { stroke: var(--fgrid); stroke-width: 1; }
+.gfig .card { fill: var(--fsurf); stroke: var(--fline); stroke-width: 1.2; } .gfig .card-hi { stroke: var(--facc); stroke-width: 1.8; }
+.gfig .bubble { fill: var(--fsurf2); stroke: var(--fline); stroke-width: 1; } .gfig .bubble-a { fill: var(--fsurf); stroke: var(--fline); stroke-dasharray: 3 3; }
+.gfig .tline { stroke: var(--faxis); stroke-width: 3; stroke-linecap: round; } .gfig .tline-hot { stroke: var(--fcrit); }
+.gfig .token { fill: var(--facc); } .gfig .token-tx { fill: #fff; font-size: 13px; font-weight: 700; }
+.gfig .meter { fill: var(--fsurf2); stroke: var(--fline); } .gfig .meter-fill { fill: var(--fcrit); } .gfig .meter-low { fill: var(--facc); }
+.gfig .arrow-bg { stroke: var(--fbg); stroke-width: 8; stroke-linecap: round; fill: none; }
+.gfig .arr-acc { stroke: var(--facc); stroke-width: 3.4; stroke-linecap: round; } .gfig .head-acc { fill: var(--facc); }
+.gfig .arr-crit { stroke: var(--fcrit); stroke-width: 3.4; stroke-linecap: round; } .gfig .head-crit { fill: var(--fcrit); }
+.gfig .arr-faint { stroke: var(--fcrit); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 4 3; opacity: .55; } .gfig .head-faint { fill: var(--fcrit); opacity: .55; }
+.gfig .arr-ghost { stroke: var(--facc); stroke-width: 1.6; stroke-dasharray: 4 3; opacity: .5; }
+.gfig .arc { fill: none; stroke: var(--ftext); stroke-width: 1.8; }
+.gfig .pill { fill: var(--fsurf); stroke: var(--fline); } .gfig .pill-crit { fill: var(--fcrit); } .gfig .pill-ok { fill: var(--facc); }
+.gfig .pulse { fill: var(--facc); stroke: var(--fsurf); stroke-width: 2; }
+.gfig .win { fill: var(--facc); fill-opacity: .10; stroke: var(--facc); stroke-width: 2; }
+.gfig .bar { fill: var(--facc); } .gfig .bar-dim { fill: var(--faxis); } .gfig .bar-max { fill: var(--facc-ink); }
+.gfig .maxline { stroke: var(--fcrit); stroke-width: 1.8; stroke-dasharray: 6 4; }
+.gfig .cue { fill: var(--fcrit); } .gfig .cue-bg { fill: var(--fgrid); }
+.gfig .auc-line { fill: none; stroke: var(--ftext); stroke-width: 2.2; stroke-linejoin: round; }
+.gfig .auc-dot { fill: var(--ftext); stroke: var(--fbg); stroke-width: 2; } .gfig .auc-best { fill: var(--facc); }
+.gfig .layer { fill: var(--fsurf2); stroke: var(--faxis); } .gfig .layer-hot { fill: var(--facc); fill-opacity: .28; stroke: var(--facc); }
