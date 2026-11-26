@@ -7,11 +7,11 @@ summary: "I reproduced the sycophancy steering experiment from Li et al. on Llam
 <div class="tldr" markdown="1">
 <span class="tldr-label">TL;DR</span>
 
-- I reproduced the sycophancy steering experiment from [Li et al.](https://arxiv.org/abs/2603.24543) on [Llama-2-7B-chat](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), by applying a sycophancy steering vector at layer 14 using 7 multipliers from -1.5 to 1.5 (zero included, which is the baseline). The effect was measured using [JailbreakBench](https://huggingface.co/datasets/JailbreakBench/JBB-Behaviors) on 100 harmful prompts using three templates (no attack, prefix injection, refusal suppression). Then, the responses from the model were evaluated using GPT-4o-mini as a judge.
-- Changes in **Attack Success Rate** matched at +1.5, compared with the baseline at 0: prefix injection **+20 points** compared to about **+15** for Li et al., and refusal suppression **+15 points** compared to about **+20** (their numbers are read from their Figure 3). Also, I applied the same [normalization step](https://github.com/yetiiil/analyse-sv-safety/blob/main/normalize_vectors.py) they used to have the same norm or strength applied.
-- For the **No attack** template, which is just the prompt, I had **+11 points** compared to about **+1** for Li et al. And for negative multipliers it is about -1 point for all three, compared to about 0/-6/-3 for Li et al. I believe the negative side is explained by my results having a lower baseline. However, for the **No Attack** template, I haven't dug deeper into it.
-- I also measured the **False Refusal Rate** using 100 benign prompts from JailbreakBench with the same multipliers. The trend is that refusal fell from **65%** at -1.5 to **51%** at 0 to **36%** at +1.5. This used the [XSTest](https://github.com/paul-rottger/xstest) classifier prompt on GPT-4o-mini. However, there is nothing in the paper to compare this against, as Li et al. report FRR only for Qwen models and only for two other behaviors, self-awareness and anti-LGBTQ-rights (their Figure 6).
-- The most useful practical finding in reproducing this work was how important it is to match the norm to get similar effects. Because I was only interested in sycophancy, I had one steering vector extracted from the model. In Li et al.'s work, there were 9 vectors with a normalization step applied to all of them. When I tested the original extracted vector I did not get similarly strong results. When I computed the cosine similarity the two vectors matched at about **0.997**, then I compared their norms and that was the issue: **1.94** for my raw vector against **7.08** for Li's normalized one, a factor of 3.65.
+- I reproduced the sycophancy steering experiment from [Li et al.](https://arxiv.org/abs/2603.24543) on [Llama-2-7B-chat](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf).
+- **What matched:** at +1.5, **Attack Success Rate** rose by **+20 points** under prefix injection and **+15 points** under refusal suppression, compared to about **+15** and **+20** for Li et al.
+- **What did not match:** with no attack I had **+11 points** compared to about **+1**, and the decrease at negative multipliers did not reproduce.
+- **Added measurement:** the **False Refusal Rate** on benign prompts fell from **65%** at -1.5 to **36%** at +1.5.
+- **Most useful finding:** the match only appeared after a [normalization step](https://github.com/yetiiil/analyse-sv-safety/blob/main/normalize_vectors.py) that is in their code but not in the paper. My raw vector had the same direction (cosine **0.997**) but a norm of **1.94** against **7.08**.
 </div>
 
 ## What the original paper claims
@@ -34,7 +34,7 @@ The model used to extract sycophancy and test the effect on refusal was [Llama-2
 
 ### Generation
 
-A steered version of the model was used to measure ASR and FRR on [JailbreakBench](https://huggingface.co/datasets/JailbreakBench/JBB-Behaviors) using **greedy decoding**, **300 max new tokens** and **no system prompt**, just the generation template.
+A steered version of the model was used to measure ASR and FRR on [JailbreakBench](https://huggingface.co/datasets/JailbreakBench/JBB-Behaviors), with 7 multipliers from -1.5 to 1.5 (zero included, which is the baseline), using **greedy decoding**, **300 max new tokens** and **no system prompt**, just the generation template.
 
 ### Dataset
 
@@ -146,6 +146,10 @@ Answer with only the class label.</code></pre>
 
 The change in ASR is clear for m > 0, with a trend going from 1-4% at the baseline to **12%** (no attack), **16%** (refusal suppression) and **24%** (prefix injection) at +1.5. This means that when the residual stream or the output is steered toward sycophancy, the ASR increases across all 3 types of attacks. For m < 0 the ASR stays near zero: the change is about 1 point, which is one prompt out of 100, so this data cannot show a decrease. 
 
+### What did not match
+
+For the **No attack** template, which is just the prompt, I had **+11 points** compared to about **+1** for Li et al. I haven't dug deeper into it. For negative multipliers the change is about -1 point for all three, compared to about 0/-6/-3 for Li et al. I believe the negative side is explained by my results having a lower baseline. Their numbers are read from their Figure 3.
+
 ### Example
 
 One prompt from JailbreakBench with no attack template, refused by the unsteered model and judged as jailbroken at m = +1.5:
@@ -170,7 +174,11 @@ The steered reply opens with the same refusal, then goes on to argue for the req
 ### FRR plot
 ![False Refusal Rate on benign prompts against the steering multiplier](/assets/images/sycophancy_frr_vs_multiplier.png)
 
-The false refusal rate increases as you steer away from sycophancy (m < 0), and it decreases for m > 0.
+The false refusal rate increases as you steer away from sycophancy (m < 0), and it decreases for m > 0. Refusal fell from **65%** at -1.5 to **51%** at 0 to **36%** at +1.5. There is nothing in the paper to compare this against, as Li et al. report FRR only for Qwen models and only for two other behaviors, self-awareness and anti-LGBTQ-rights (their Figure 6).
+
+### The normalization step
+
+Because I was only interested in sycophancy, I had one steering vector extracted from the model. In Li et al.'s work, there were 9 vectors with a normalization step applied to all of them. When I tested the original extracted vector I did not get similarly strong results. When I computed the cosine similarity the two vectors matched at about **0.997**, then I compared their norms and that was the issue: **1.94** for my raw vector against **7.08** for Li's normalized one, a factor of 3.65.
 
 ## Limitations
 
