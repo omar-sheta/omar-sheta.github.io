@@ -14,6 +14,23 @@ summary: "I reproduced the sycophancy steering experiment from Li et al. on Llam
 - **Most useful finding:** the match only appeared after a [normalization step](https://github.com/yetiiil/analyse-sv-safety/blob/main/normalize_vectors.py) that is in their code but not in the paper. My raw vector had the same direction (cosine **0.997**) but a norm of **1.94** against **7.08**.
 </div>
 
+<details>
+<summary>Expand for definitions of the terms used in this post</summary>
+<ul>
+<li><strong>Steering vector:</strong> a direction in the model's internal activations that, when added while the model generates, pushes its behavior toward a trait (here, sycophancy) or away from it.</li>
+<li><strong>Layers, activations and the residual stream:</strong> a language model processes text through a stack of layers (32 in Llama-2-7B). The residual stream is the running internal state that every layer reads from and writes to, and its values are the activations.</li>
+<li><strong>Multiplier (m):</strong> how strongly the steering vector is added. Positive values push toward the behavior, negative values push away from it, and 0 means no steering.</li>
+<li><strong>Forward hook:</strong> a PyTorch function that runs whenever a chosen layer produces its output, which lets you read or change that output. This is how the vector is added.</li>
+<li><strong>Diff-in-means:</strong> the average activation on examples that show the behavior minus the average on examples that do not. The result is used as the steering vector.</li>
+<li><strong>Jailbreak:</strong> a prompt that gets a model to produce content it would normally refuse.</li>
+<li><strong>Attack Success Rate (ASR):</strong> the share of harmful prompts for which the model's reply is judged as harmful compliance.</li>
+<li><strong>False Refusal Rate (FRR):</strong> the share of harmless prompts that the model refuses anyway.</li>
+<li><strong>LLM judge:</strong> a second language model (here GPT-4o-mini) that reads each reply and labels it, for example as safe or jailbroken.</li>
+<li><strong>Cosine similarity and norm:</strong> cosine similarity measures whether two vectors point in the same direction (1 means the same direction). The norm is a vector's length, which here sets how strong the steering is.</li>
+<li><strong>Refusal direction:</strong> a direction in the activations that <a href="https://arxiv.org/abs/2406.11717">prior work</a> found to control whether the model refuses a request.</li>
+</ul>
+</details>
+
 ## What the original paper claims
 
 The paper claims that across different model families, steering vectors affect **ASR** by either increasing it (up to 57%) or decreasing it (up to 50%). They attribute this phenomenon to the overlap between the refusal direction and other behaviors' directions. 
